@@ -1,0 +1,805 @@
+---
+title: "Simon vertikal"
+format: html
+---
+
+## Quarto
+
+Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
+
+# Einleitung
+
+Dies ist das R-Dokument mit dem Sie die Daten Ihres Experiments aus dem Allgemeine 1 Seminar auswerten sollen. Dabei müssen Sie nicht bei Null anfangen. Die Auswertung ist schon in die einzelnen Schritte vorstrukturiert und ein Großteil des R-Codes ist bereits geschrieben. Ihre Aufgabe ist es zum einen, bestehenden Code auszuführen, möglichst genau nachzuvollziehen, was er bewirkt und Ihre Erkenntnisse anschließend hier im Dokument festzuhalten. Zum anderen sollen Sie (am Ende) selber ein wenig Code schreiben bzw. bestehenden Code vervollständigen. Zu allen Aufgaben geben wir Ihnen an der jeweiligen Stelle genauere Anweisungen und Hilfestellungen.
+
+Unser Ziel ist es, Sie mit dieser Analyse weiter an die eigenständige Arbeit mit R heranzuführen. Dabei können grob zwei Bereiche unterschieden werden:
+
+Sie sollen gebräuchliche R-Funktionen kennen- und anwenden lernen. Dazu gehört auch, dass Sie allgemeine Arbeitsschritte wie das Einlesen und Auswählen von Daten, das Erstellen neuer Variablen oder das Zusammenfassen von Daten konzeptuell verstehen, diese Schritte richtig anordnen können und mit dem Einsatz bestimmter Funktionen verknüpfen. Auch wenn der konkrete Code einer Analyse einzigartig ist, sind die grundsätzlich anfallenden Aufgaben häufig recht ähnlich. Die Funktionen, die wir Ihnen dazu vorstellen, kommen überwiegend aus dem tidyverse und sind gut für einen leichten Einstieg in diese Aufgaben geeignet.
+
+Zum anderen sollen Sie sich weiter mit dem "Drumherum" vertraut machen. Dazu gehören ein sicherer Umgang mit der Benutzeroberfläche RStudio, Kenntnisse über einige grundlegende Bausteine des R-Universums wie Objekte, Funktionen, Pakete, und einige Do's und Dont's zur Reproduzierbarkeit einer Analyse.
+
+Aller Anfang ist schwer. Aus eigener Erfahrung lässt sich R am besten durch "Selbermachen" lernen. Zunächst kryptisch wirkende Fehlermeldungen und Ratlosigkeit gehören zu diesem Prozess (leider) dazu. Wenn Sie nicht weiter wissen, versuchen Sie sich gegenseitig innerhalb Ihrer Gruppe zu helfen oder wenden Sie sich an Ihre Betreuer\*innen.
+
+Viel Erfolg beim Durcharbeiten der Analyse!
+
+##Konzept der Analyse
+
+Bevor Sie das erste Mal überhaupt an R-Code denken, sollten Sie bereits ein möglichst genaues Konzept der anstehenden Analyse haben. Dazu bietet es sich an noch einmal die Fragestellung und wichtigsten Punkte des Designs festzuhalten. Beantworten Sie dazu bitte die folgenden Fragen, soweit bekannt:
+
+1.  Wie lautet die übergeordnete Fragestellung des Experiments?
+
+Kommt es zu einer verzögerten Reaktionszeit wenn Stimulus- und Antwortortort nicht korrespondieren?
+
+2.  Welche Hypothesen haben Sie vorab aufgestellt?
+
+H0: Reaktionszeit Korrespondent >= Reaktionszeit Inkorrespondent
+H1: Reaktionszeit Korrespondent < Reaktionszeit Inkorrespondent
+
+H0: Errorrate Korrespondent >= Errorrate Inkorrespondent
+H1: Errorrate Korrespondent < Errorrate Inkorrespondent
+
+3.  Welche unabhängigen Variablen gibt es? Welche Stufen haben sie? Werden sie between- oder within-subject variiert?
+
+UVs
+- Stimulusfarbe (grün, blau)
+- Stimulusort (horizontal und vertikal)
+- Antwortort (vertikal)
+
+Design
+- within-subject
+
+4.  Welche abhängigen Variablen werden erfasst?
+
+- Reaktionszeit
+- Errorrate
+
+5.  Wie sollten die Ergebnismuster deskriptiv aussehen, wenn die Hypothesen zutreffen? Wie könnte eine Abbildung dazu aussehen (Welche Art von Grafik bietet sich an? Was ist auf der X, was auf der Y-Achse?, Müssen Datenpunkte z.B. über unterschiedliche Farben voneinander abgegrenzt werden?)? Fertigen Sie gerne auch eine Skizze in einer separaten Datei oder analog (per Hand) an.
+
+siehe Skizze
+
+
+6.  Welche statistischen Verfahren möchten Sie für die Überprüfung anwenden?
+
+- multifaktorielle ANOVA
+
+7.  Welche Voraussetzungen haben diese statistischen Verfahren? Wie lassen sie sich prüfen? Was geschieht, wenn einzelne oder mehrere Voraussetzungen verletzt sind?
+
+- Unabhängigkeit der Messwerte voneinander / keine Autokorrelation
+- Varianzhomogenität: Die Varianzen innerhalb aller Bedingungen sind gleich (Prüfung über den Levene-Test)
+- Normalverteilung der Residuen in jeder Bedingung
+
+8.  Wie läuft ein einzelner Trial ab? Wie waren ggf. die Präsentationszeiten der Stimuli? Was war die Aufgabe der Versuchsperson?
+
+grüne oder rote Kreise werden für 120ms präsentiert
+
+9.  Wann müssen einzelne Werte oder ganze Versuchspersonen ausgeschlossen werden? Wie müssen die Rohdaten weiter zusammengefasst werden? Weiter unten werden die Rohdaten eingelesen. Kommen Sie ggf. nochmal zu dieser Frage zurück, nachdem Sie die Datenstruktur angeschaut haben.
+
+- 100ms bis 1s
+
+10. Machen Sie eine Liste der einzelnen Datenauswertungsschritte.
+
+(im Tutorium fragen)
+
+Damit ist der wesentliche Rahmen der geplanten Analyse abgesteckt. Ihr wissen (grob), welche Daten das Experiment auswirft und wie Sie sie umformen und interpretieren wollen. Jetzt sollten Sie sich Gedanken zur Umsetzung in R machen. Die groben Arbeitsschritte sind dabei für fast alle Analysen gleich: (1) Vorverarbeitung der Daten, (2) das Erstellen von deskriptiven Statistiken und Abbildungen und (3) abschließend das Berechnen der Inferenzstatistik. Auch dieses Dokument ist in diese Schritte unterteilt. Bei der Ausarbeitung dieser Schritte kann es nach einem ersten Blick in die Daten sinnvoll sein, sich zunächst Gedanken zu den geeigneten Funktionen für die Inferenzstatstik zu machen und sich anzuschauen, in welchem Format die Daten für diese Funktion vorliegen müssen. Von dort lassen sich dann (in gewisser Weise rückwärts) die notwendigen Vorbereitungsschritte von den Rohdaten aus planen. Bei dieser Analyse haben wir diese Planung übernommen, so dass Sie das Dokument mehr oder weniger von oben nach unten durcharbeiten können.
+
+#Vorverarbeitung
+
+```{r setup}
+# Ich persönlich benutze den allerersten Chunk, um alle Pakete, die ich für die Analyse benötige zu laden. Damit sind sie übersichtlich an einem Ort. Da auch die Reihenfolge, mit der die Pakete geladen werden, eine Rolle spielen können, ist es gut, alle an einem Ort im Überblick zu haben. 
+
+library(tidyverse); library(ez); library(knitr); library(car) 
+#Tipp: Das ";" können Sie nutzen, um mehrere Funktionen in eine Zeile zu schreiben. Es ersetzt sozusagen den Zeilenumbruch, den ihr sonst durch das drücken der Enter-Taste einfügt. Bei kurzen Funktionen wie library() kann so etwas Platz gespart werden. Sie könnten die einzelnen library-Aufrufe aber natürlich auch einfach untereinander schreiben.
+
+#Falls Sie an dieser Stelle Fehlermeldungen wie 'Error in library(XXXX) : es gibt kein Paket namens ‘XXXX’' erhalten, könnte es gut sein, dass eins der Pakete noch nicht installiert ist. Bei einer aktiven Internetverbindung können Sie das leicht mit der 'install.packages("XXXX")' (Anführungszeichen nicht vergessen!) nachholen. Schreiben Sie diesen Befehl einfach in die Console und führen ihn aus. Dieser Befehl gehört allerdings NIEMALS(!) in ein Skript. Führt eine andere Person euer Skript aus, würden bei ihr plötzlich Pakete installiert werden, die sie möglicherweise gar nicht haben wollte. Das Installieren von Paketen sollte immer eine bewusste Entscheidung sein!
+
+```
+
+##Einlesen der Daten
+
+Ohne Daten keine Analyse. Daher steht am Anfang stets das Einlesen der Datensätze. Datentabellen können in vielen verschiedenen Dateiformaten vorliegen und wir müssen eine für das jeweilige Format geeignete R-Funktion wählen, um sie einlesen zu können. EXKURS Datenformate: Die geläufigsten Formate um tabellarische Daten zu speichern sind wohl das comma-separated values (csv) Format bzw. die allgemeine Gruppe von delimiter-separated values (zu Deutsch etwa "Trennzeichen-getrennte Werte") und xlsx, das Format in dem Microsoft Excel standardmäßig Daten speichert. Während xlsx strenggenommen an die Nutzung von Microsoft Excel gebunden ist und für die Nutzung in R zusätzliche Pakete geladen werden müssen (z.B. readxl), sind delimiter-separated value-Formate wie csv nicht an ein bestimmtes Programm gebunden und können letztlich mit jedem Texteditor und ohne Weiteres mit R werden. Der Grundsätzliche Aufbau dieses Formats ist denkbar einfach: Jede Zeile entspricht einer Tabellen-Reihe und die einzelnen Tabellen-Spalten werden durch ein mehr oder weniger beliebiges Trennzeichen (delimiter, häufig sind das "," oder ";" oder "\t" aka Tabstop) voneinander getrennt.
+
+In der aktuellen Analyse haben wir Glück: Die Experimentalsoftware Opensesame hat uns direkt einen Datensatz im csv-Dateiformat mit den Durchgängen aller Versuchspersonen im long-Format ausgeworfen. Bevor wir uns endlich ans Einlesen machen, stellen wir allerdings noch einmal sicher, dass die Daten vernünftig abgespeichert sind. Ich empfehle Ihnen in dem Hauptordner Ihres Projekts stets einen Unterordner für die Daten anzulegen (z.B. mit dem Namen "Daten"...). Aktuell mag das bei nur einer Datei vielleicht etwas überflüssig wirken, aber häufig bleibt es nicht bei dieser einen Datei und Chaos im Hauptordner ist vorprogrammiert. Gewöhnen Sie sich dieses Vorgehen daher am besten direkt an. Im folgenden Chunk werden dann die Rohdaten eingelesen.
+
+Stellen Sie sicher, dass sich im Hauptordner Ihrer Analyse ein Unterordner "Daten" befindet und in diesem Ordner der einzulesende Datensatz enthalten ist. Führen Sie dann den Chunk aus und beantworten Sie die Fragen unter dem Chunk.
+
+```{r datRead}
+dataRaw <- read_delim("G4_data_03_06_24.csv", na = c("None"))
+
+# Diese Zeile liest die Daten aus der angegeben CSV-Datei ein und scheibt die Daten in einen "Data Frame" mit dem Namen "dataRaw". Der Name ist dabei frei wählbar. Ich hätte auch ihn auch "xyvf2" nennen können. Es empfiehlt sich aber immer, Namen zu wählen, die inhaltlich beduetungsvoll sind, um auch später relativ schnell zu wissen, was sich dahinter verbirgt (in unserem Fall die "Rohdaten").
+
+#Wenn es hier zu Fehlermeldungen kommt und keine Datei eingelesen wurde, prüfen Sie: 
+#1. Ob sich diese QMD-Datei im Hauptordner und die csv im richtigen Unterordner befinden.
+#2. Decken sich der Dateiname der CSV-Datei im Ordner und hier im Chunk?
+#3. Haben Sie die Qmd direkt aus dem Ordner mit einem Doppelklick geöffnet? Wenn nicht, schließen Sie RStudio und öffnen Sie die QMD auf diese Weise. Nur so wird das working directory (also der Ort auf dem Computer, an dem R nach der Datei sucht) automatisch auf den Ordner eingestellt, in dem sich die Rmd befindet. Mit dem Befehl 'getwd()' können Sie auch prüfen, was aktuell das working directory ist. GEHT DAS AUCH OHNE AUS UND WIEDER AN?
+```
+
+Was bedeutet der Begriff 'long format'?
+
+- eine Spalte für alle Ausprägungen der UV
+
+Wie viele Zeilen und Spalten hat der Datensatz?
+
+ 960 & 37
+
+Die Funktion read_delim scheint das Trennzeichen selbstständig geraten zu haben. Welches Zeichen ist es laut Output der Funktion? Können Sie die csv mit einem Texteditor (z.B. Editor in Windows oder TextEdit in MacOS) öffnen und prüfen, ob das stimmt?
+
+Output: delimiter "," -> also ein Komma, auch zu erkennen im Texteditor
+
+Warum ist in der Funktion zusätzlich zum Pfad der csv das Argument na = c("None") gesetzt? Tipp 1: Geben Sie ?read_delim in die Console unten ein. Damit öffnet sich die Hilfe zur Funktion (standardmäßig im Fenster unten rechts). Suchen Sie nach der Beschreibung zum Argument "na". Tipp 2: Die Experimentalsoftware Opensesame schreibt ein "None", wenn an einer Stelle ein Wert fehlt.
+
+das spezifiziert, was mit fehlenden Daten passiert - diese werden in dem Fall durch das Wort "None" ersetzt
+
+Nachdem wir den Datensatz erfolgreich eingelesen haben, sollten wir uns zunächst einen Überblick darüber verschaffen, was alles im Datensatz gespeichert ist. Es gibt viele Funktionen mit denen wir einen Blick in den Datensatz werfen können. Mir ist es an dieser Stelle wichtig, dass mit der gewählten Funktion nicht nur bei der "interaktiven" Arbeit am Dokument in RStudio in den Datensatz geschaut werden kann, sondern dass auch in der "statischen", gerenderten Rmd am Ende ein möglichst vollständiger Einblick möglich ist. Im unteren Chunk stelle ich vier Möglichkeiten vor, wobei aus meiner Sicht nur eine Funktion dieses Kriterium erfüllt.
+
+Führen Sie den Chunk aus und lesen Sie meine Anmerkungen zu den Funktionen durch. Sie können gerne den '\#' vor den aktuell auskommentierten Funktionen entfernen, um sich auch den Output der anderen Funktionen anzuschauen. Beantworten Sie anschließend die Fragen unter dem Chunk
+
+```{r datPeep}
+#View(dataRaw) # Entspricht einem Doppelklick auf den Datensatznamen im Enviroment-Fenster und öffnet den Datensatz in einem eigenen Fenster. Praktisch, wenn ihr euch im gesamten Datensatz umschauen wollt, aber ich würde empfehlen diese Funktion niemals fest in euren R-Code zu schreiben, denn immer wenn der Code durchläuft öffnen sich dann wild neue Fenster, was zeitraubend und verwirrend sein kann, besonders wenn man mehrere R-Dokumente gleichzeitig offen hat.
+
+glimpse(dataRaw) # Die Funktion listet alle Spalten des Datensatzes (Variablen) als Zeilen untereinander und gibt hinter dem Spaltennamen den Typ und die ersten paar Werte in dieser Spalte aus. Durch diese (zunächst vielleicht gewöhnungsbedürftige) Umformung, werden stets alle Spalten und die ersten paar Zeilen eines Datensatzes angezeigt und die Funktion ist damit bestens geeignet auch in der gerenderten Qmd einen guten Überblick über die im Datensatz enthaltenen Variablen zu machen.
+
+#print(dataRaw) 
+#&
+#head(dataRaw)
+
+# sind base-R Funktion, die besonders kleine Datensätze übersichtlicher darstellen als glimpse. Jedoch werden nur die ersten 10 bzw. 6 Zeilen des Datensatzes gezeigt, und bei einer Vielzahl von Spalten muss durch diese geblättert werden. Für gerenderte Qmd sind die Funktionen eher nicht geignet, weil dort nicht geblättert werden kann. print() ist vielseitiger als head(), wenn Sie sich neben Datenformaten die im Environment unter Data erscheinen (z.B. data.frame, matrix, vector) auch andere Datenformate anschauen wollen die unter Values erscheinen 
+
+```
+
+Abschließend sollen Sie darüber nachdenken, welche Variablen aus dem Datensatz sie für welchen Zweck benötigt. Vergleichen Sie dafür die obige Auflistung aus dem glimpse() Befehl mit den Antworten auf die Fragen 4 und 5 zum Konzept der Analyse. Da Sie die Variablen nicht selbst benannt haben, kann es bei einigen Variablen schwierig sein, zu wissen was sich hinter diesem Variablennamen verbirgt. Die meisten Variablennamen sollten allerdings realtiv eindeutig sein. Offene Punkte besprechen Sie dann einfach in der Sprechstunde.
+
+Welche Spalten enthalten die unabhängigen Variablen?
+
+targetAxis, targetColor, targetPosition 
+
+Welche Spalten enthalten die abhängigen Variablen?
+
+response_time_keyAnswer, correctkeyanswer
+
+Welche Spalten sind außerdem noch notwendig? Schauen Sie sich an dieser Stelle auch nochmal Frage 10 beim Konzept der Analyse an.
+
+im Tutorium fragen
+
+# Konsistenz der Daten prüfen
+
+Im nächsten Schritt sollten wir unsere Daten auf Vollständigkeit prüfen. Dabei interessiert uns an dieser Stelle lediglich, welche Versuchspersonen vollständige Datensätze einbringen. Der Einfachheit halber, möchten wir für unsere Analyse nur die Datensätze von Versuchspersonen einschließen, die alle Trials bearbeitet haben (= 240). An anderer Stelle wäre es natürlich auch denkbar vorab ein Kriterium festzulegen, mit dem auch teilweise unvollständige Datensätze berücksichtigt werden würden.
+
+*Führen Sie den unteren Chunk aus und lesen Sie sich die Anmerkungen durch. Beantworten Sie anschließend die darunter stehenden Fragen.*
+
+```{r subjComp}
+# Konzept "Pipe": Hier benutze ich zum ersten Mal in diesem Dokument eine sogenannte (Pipe)[https://r4ds.had.co.nz/pipes.html]. Konzeptuell hat es mir zunächst sehr geholfen sich diese Technik als eine Art "Fließbandverarbeitung" vorzustellen. Zu Beginn wähle ich einen Datensatz aus (dataRaw). Über den sogenannten "Pipe-Operator" %>% (Tastenkürzel STRG/CMD + SHIFT + M!) schicke ich ihn dann auf das Fließband. Auf diesem Fließband können unterschiedliche Dinge mit dem Datensatz passieren (d.h. er kann in unterschiedliche Funktionen eingesetzt werden). Ich kann ihn z.B. in die dplyr-Funktion filter() "pipen" und so über eine logische Bedingung nur bestimmte Zeilen des originalen Datensatzen auswählen. Diesen modifizierten Datensatz kann ich dann wiederum in den nächsten Verarbeitungsschritt pipen usw. Am Ende der Verarbeitung kann ich den entstandenen Datensatz mit "->" in ein neues Objekt speichern. Ein wesentlicher Vorteil dieses Vorgehens ist die Übersichtlichkeit: Oft werden müssen mehrere Funktionen auf einen Datensatz angewendet werden, um ein Ziel zu erreichen. Ohne die Pipe müsste ich für jeden Unterschritt ein neues Objekt erstellen oder ein bestehendes Objekt stetig überschreiben. Außerdem ist nicht direkt ersichtlich, dass dieser Teil des Codes eigentlich nur einem Zweck dient. Die Pipe löst beide Probleme. Der Datensatz wird innerhalb der Pipe weitergereicht, ohne dass er jemals in eurer Umgebung auftaucht und optisch organisiert die Pipe diese Verarbeitungsschritte eindeutig zu einer Einheit. An vielen Stellen bietet es sich daher meiner Meinung nach diese Technik zu benutzen. Sie ist allerdings vornehmlich für die Arbeit mit tidyverse-Funktionen optimiert und die Kombination mit Funktionen aus anderen Pakten gestaltet sich manchmal schwierig. Ein Tipp noch: Manchmal schreibt ihr vielleicht eine Pipe runter, wollt sie ausführen und es kommt zu irgendeiner Fehlermeldung. Wenn die Fehlermeldung selbst nicht hilfreich ist, kann es manchmal praktisch sein nur einen Teil der Pipe mit der Maus auszuwählen (immer bis *vor* den nächsten Pipe-Operator) und mit STRG + Enter auszuführen. So könnt ihr quasi spicken, was bis zu dieser Stelle mit eurem Datensatz passiert ist und ob die Pipe überhaupt bis dorthin durchläuft. So kann der Fehler leichter isoliert und behoben werden.
+
+dataRaw %>% 
+  filter(trialType == "experimental") %>%       # Nur die Zeilen auswählen, in denen die Variable "trialType" den Wert "experimental" hat (also Übungsdurchgänge ausschließen).
+  count(jatosStudyResultId) -> temp             # Zeilen pro Versuchsperson zählen und in den Data.frame "temp" (für "temporär") speichern
+
+# Es wird ein Data Fame mit 2 Spalten erzeugt (Versuchspersonennummer und n), Die Spalte n enthält die Anzahl an Trials, die die VP durchgeführt hat.
+# Nun wollen wir die VP-Nummern identfizieren, die tatsächlich alle 216 Trails durchgeführt haben:
+
+temp %>%         
+  filter(n == 240) %>%                    # Nur die Zeilen auswählen, in denen n == 240 ist
+  pull(jatosStudyResultId) -> subjComplete # Nur die Spalte "jatosStudyResultId" aus dem Datensatz herausziehen und im Objekt "subjComplete" speichern
+
+subjComplete
+```
+
+*Was bedeuten die Zahlen im Output des Chunks?*
+
+das sind die jatosStudyResultID der vier Vps, die alle 240 trials durchgeführt haben
+
+*Warum wird der Datensatz zunächst auf Basis der Spalte "trialType" gefiltert? Tipp: Was passiert, wenn Sie diese Zeile auskommentieren und den Chunk erneut ausführen? Was gibt die dplyr-Pipe dann nach dem count()-Befehl aus (testen Sie das, indem Sie den Code bis zum Pipe-Operator nach count() mit der Maus markieren und über STRG (Windows) bzw. CMD (Mac) + Enter nur diesen Part ausführen.*
+
+es scheint keine Veränderung zu geben, wenn man "trialType" auskommentiert (?)
+
+*Je fortgeschrittener Sie in der Benutzung mit R werden, desto eleganter und sarsamer können Sie R-Code erstellen. Im obigen Beispiel könnten Sie die beiden kurzen Pipes zu einer zusammenführen. Wie würden Sie das machen? Kopieren Sie den obigen Chunk und probieren Sie es aus.*
+
+fragen im Tutorium
+
+Nachdem wir nur Versuchspersonen mit vollständigen Datensätzen ausgewählt haben interessiert uns, ob unsere Stichprobe vollständig ist.
+
+*Führe den unteren Chunk aus und beantworte die Fragen darunter.*
+
+```{r}
+unique(dataRaw$jatosStudyResultId) -> subjTotal #base-R Funktion! dplyr::distinct() wäre eine tidyverse-Alternative
+
+length(subjTotal)
+length(subjComplete)
+```
+
+*Was ist im Objekt subjTotal gespeichert?*
+
+dasselbe wie in subComplete nur in anderer Reihenfolge (?)
+
+*Was gibt die Funktion length() aus? Tipp: ?length()*
+
+die Anzahl der Werte des "Vektors" subjTotal - also die Anzahl der VPs, die 240trials durchgeführt haben
+
+*Unter "Konzept der Analyse" haben Sie die geplante Stichprobengröße festgehalten. Vergleichen Sie die Zahl mit dem Outputs des Chunks. Haben wir die gewünschte Stichprobengröße erreicht? Wie groß ist der Ausschluss aufgrund unvollständiger Daten?*
+in Experiment 1 waren 17 Studierende VPs - 4 scheinen da nicht ausreichend zu sein; kein Ausschluss aufgrund unvollständiger Daten
+
+Beachten Sie, dass wir bisher nur Versuchspersonen ausgeschlossen haben, die das Experiment nicht vollständig bearbeitet haben. Je nach geplanter Analyse kann es vorkommen, dass in der Folge weitere Versuchspersonen ausgeschlossen werden, z.B auf Basis von Leistungmaßen. In diesem Fall sollte die Vollständigkeit der Stichprobe erst nach dem letzten Ausschluss geprüft werden.
+
+\# Aufbreiten der Daten
+
+\# Aufbreiten der Daten
+
+Nun werden die Rohdaten in Form gebracht. Beachten Sie, dass sich eine Analyse häufig in mehrere Pfade aufteilt und es innerhalb dieser Pfade immer wieder notwendig sein kann neue Variablen zu erstellen oder alte zu modifizieren. Zunächst klingt es vielleicht nach einer guten Idee alle diese "Vorbereitungen" an einer Stelle im Dokument zu sammeln. In der Praxis ist das meistens aber einerseits ziemlich lästig, weil immer wieder Code an einer ganz anderen Stelle des Dokuments eingefügt werden muss und das Dokument wird nur selten wirklich übersichtlicher dadurch. Besser ist es, Sie strukturieren Ihre Analyse in die inhaltlichen Pfade und nehmen Modifikationen an den Stellen vor, an denen sie notwendig werden. Das Aufbereiten der Rohdaten hat damit dann meistens eher den Charakter eines ersten "Aufräumens".
+
+\*Schauen Sie den unteren Chunk an und bearbeiten Sie die Aufgaben darunter. Tipp: wollen Sie nur Teile der Pipe ausführen, markieren Sie immer den Code vom Beginn der Pipe bis zum gewünschten Pipe-Operator (%\\\>%).\*
+
+```{r}
+# In diesem Chunk werden der innerhalb einer Pipe die Daten aus dataRaw in mehreren Schritten bearbeitet und der enstandene Datensatz wird als dataPrep angelegt. Vermeiden Sie es dringlichst einen bestehenden Datensatz zu bearbeiten und diesen dann innerhalb eines Qmd wieder unter dem ursprünglichen Namen anzulegen (bad practice)
+# Hier wählen wir erst die benötigten Spalten aus (select()), wählen dann die gewünschten Zeilen (filter()), und nehmen dann mehrere Veränderungen an den Variablen des Datensatzes vor (mutate())
+
+dataRaw %>% 
+  select() %>% # Variablen auswählen
+  filter(
+    # 1. Nur Versuchspersonen, die alle Durchgänge abgeschlossen haben
+    jatosStudyResultId %in% subjComplete, 
+    # 2. Nur Experimentaltrials
+    
+    # 3. Nur Reaktionszeiten >= 200 ms
+    
+    ) %>%      
+    mutate(
+    # 1. Korrespondenz rekodieren
+    correspondence = factor(x = correspondence, levels = c("corresponding","non-corresponding"), labels = c("passend","unpassend")),
+    # 2. Achse der Targetposition rekodieren
+    targetAxis = factor(case_when(targetAxis == "horizontal" ~ "X" , targetAxis == "vertical" ~ "X")),
+    # 3. Variable zur Korrektheit der Antwort erstellen
+    error = factor(ifelse(XXXX != YYYY, "y", "n")),
+    # 4. Versuchspersonen-ID als Faktor setzen
+    jatosStudyResultId = factor(jatosStudyResultId)
+  ) ->dataPrep
+
+print(dataPrep)    
+```
+
+Als erstes wollen wir etwas aufräumen und uns von allen Spalten trennen die für die Analyse nicht notwendig sind. Dazu geben wir innerhalb des select() Befehls die Spalten ein die wir behalten wollen. Beachten Sie dabei, dass die Reihenfolge, in der ihr die Variablen eingegeben werden bestimmt, wie sie im Output der Funktion angeordnet sind. Eine übersichtliche Struktur ergibt sich oft, wenn Variablen vom Großen zum Kleinen geordnet werden. Konkret könnte das so aussehen: VP-Nr., \[Sitzung\], Block-Nr., Trial-Nr., \[Between\]-UV1, \[Within\]-UV2,..., AV1, AV2). Füllen Sie den leeren select-Befehl in geordneter Reihenfolge mit allen Variablen, die ihr für die weitere Analyse für notwendig sind.
+
+\> Direkt im Chunk anpassen!
+
+Als nächstes, sollen jetzt nur die relevanten Durchgänge (Zeilen) gefiltert werden. Die erste Filterregel ist schon ausgefüllt. Die 2. habe Sie im Verlauf des Skripts bereits eingesetzt. Für die 3. können Sie logische Operatoren verwenden (z.B. \<,\> und =). Bitte beachten Sie, dass Sie innerhalb des filter() Befehls mehrere Filterregeln, durch Kommata getrennt, anneinander Reihen können.
+
+\> Direkt im Chunk anpassen!
+
+Nun nehmen wir an den Rohdaten eine Reihe von veränderungen vor:
+
+In den Rohdaten ist die Korrespondenz zwischen Antworttasten und Targetposition mit "corresponding" und "non-corresponding" kodiert. Wir möchten diese Variable an dieser Stelle auf die Stufen "passend" für "corrresponding" und "unpassen" für "non-corresponding" umkodieren. Da es sich bei der Variable um einen Faktor handelt, bietet es sich an hierfür den Befehl factor() zu nutzen. Schau dir über ?factor die Hilfeseite zu dieser Funktion an. Was verbirgt sich hinter den Argumenten "x", "levels" und "labels"? Warum müssen die Werte für "levels" und "labels" in ein c() eingefügt werden?
+
+\> Antwort
+
+Im nächsten Schritt möchten wir die Variable targetAxis, die Achse der Targetposition kodiert ins deutsche übersetzen. Effektiv heißt das lediglich "vertical" in "vertikal" umkodieren, aber wir schreiben "horizontal" zu "horizontal" an dieser Stelle einfach mal mit. Ersetzen Sie die "X"-Werte im case_when()-Befehl durch den passenden Wert. Die grundsätzliche Logik der einzelnen Zeilen in diesem Befehl lautet "wenn targetAxis den Wert (==) Y hat, dann (~) schreibe X in die neue Variable. Da wir hier aber gar keine neue Variable wollen, sondern lediglich eine bestehende Variable rekodieren wollen, nennen wir die Variable genauso wie sie bereits zuvor hieß und überschreiben die alten Werte damit.
+
+\> Direkt im Chunk anpassen!
+
+Anschließend wollen wir eine Variable zur Korrektheit der Antwort erstellen. Was in einem Durchgang die korrekte Antwort wurde bereits durch die Experimentalsoftware in der Variable "correct_response" mitgeschrieben. Wir können also leicht prüfen, ob eine Antwort richtig oder falsch war. Setzen Sie an Stelle von "XXXX" und "YYYY" zwei Variablen, die es ermöglichen die Korrektheit einer Antwort zu prüfen. Der ifelse()-Befehl liest sich so: "Wenn der logische Test (XXXX == YYYY) wahr ist, schreibe ein"y" (für yes), wenn er falsch ist ein "n" (für no). Die Variable soll die Antwort auf die Frage "Ist die Antwort falsch?" kodieren. Achtung: Der Operator "!=" bedeutet "ungleich"!
+
+\> Direkt im Chunk anpassen!
+
+Nachdem Sie die Pipe vollständig überarbeitet haben, führen Sie den Chunk aus, prüfen Sie ob in dataPrep alle Variablen so erstellt wurden wie gewünscht und vergleichen Sie die Dimensionen von dataPrep mit dataRaw.
+
+\> Probleme?
+
+Welche drei Möglichkeiten zur Rekodierung von Variablen haben Sie kennengelernt? Welche eignet sich lediglich für die Objekt-Klasse "factor"? Wie könnte sich der typische Anwendungsbereich zwischen den anderen beiden Funktionen unterscheiden?
+
+\> Antwort
+
+# Analyse der Fehlerrate
+
+Die Daten sind nun soweit aufbereitet, dass wir uns in Richtung deskriptive Statistik und Inferenzstatistik begeben sollten. Wir wollen dabei die Effekte von zwei unterschiedlichen abhängigen Variablen betrachten: Fehlerrate und Reaktionszeit. Das weitere Vorgehen trennt sich daher an dieser Stelle in zwei Pfade auf (einen pro abhängige Variable). Im Verlauf der einzelnen Pfade liegen dabei die gleichen Etappenziele:
+
+Deskriptive Statistik/Daten zusammenfassen
+
+Abbilden der Daten
+
+Inferenzstatistik und Prüfen der Voraussetzungen
+
+Der genaue Weg zu diesen Abschnitten unterscheidet sich natürlich leicht. Wir beginnen mit den Fehlerraten.
+
+## Deskriptive Statistik
+
+Ziel der deskriptiven Statistik ist es die vorliegenden Daten soweit zusammenzufassen (\*aggregieren\*), dass Schlüsse auf die Forschungsfragen möglich werden. Diese Forschungsfragen beziehen sich dabei häufig (und auch in diesem Fall) auf Effekte, die über Versuchspersonen hinweg zu betrachten sind. Praktisch werden wir dafür pro Bedingung Mittelwerte (und Streuung) über Versuchspersonen hinweg berechnen und zwischen den verschiedenen Bedingungen miteinander vergleichen.
+
+Um den Weg dorthin zu finden, vergegenwärtigen wir uns kurz die vorliegende Datenstruktur: Unsere Daten stammen aus einem within-subject Design, d.h. jede Versuchsperson bringt Werte für alle Bedingungen dieses Experiments ein. Zusätzlich bringt eine Versuchsperson \*pro Bedingung\* aktuell aber nicht nur einen Wert, sondern eine Vielzahl von Werten ein. Das ist so, weil sich Leistung oder Wahrnehmungsurteile nicht gut durch eine einzelne Messung schätzen lassen. Indem wir Versuchspersonen pro Bedingung eine Vielzahl von Durchgängen bearbeiten lassen, verbessern wir die Schätzung ihrer tatsächlichen Leistung bzw. ihres Urteils in dieser Bedingung.
+
+Vor uns steht also eine zweistufige Aggregation:
+
+1.  Innerhalb jeder Versuchsperson die Ausprägung der abhängigen Variable (zunächst die Fehlerrate) pro Bedingung berechnen. Dazu müssen wir über die einzelnen Durchgänge hinweg aggregieren. Diese Daten werden später auch für die Inferenzstatistik benutzt.
+
+2.  Weiteres Zusammenfassen des Ergebnisses aus 1. über Versuchspersonen hinweg. Für jede Bedingung wollen wir so einen Stichprobenmittelwert und eine Streuungsinformation erhalten. Die Daten beschreiben die Effekte in unsere Stichprobe deskriptiv und sollen in einer Grafik dargestellt werden.
+
+### Schritt 1: Berechnung der Fehlerrate pro Versuchsperson und Bedingung
+
+Wir beginnen mit der Berechnung der Fehlerrate pro Versuchsperson und Bedingung. Dabei ist es wichtig im Hinterkopf zu haben, was die Fehlerrate ist: Der relative Anteil an korrekten Antworten an allen gegeben Antworten einer Versuchsperson in einer bestimmten Bedingung. An dieser Stelle geht es also nicht darum Mittelwerte zu bilden, sondern wir brauchen absolute Häufigkeiten, die wir zueinander in Beziehung setzen.
+
+\*Schauen Sie sich den folgenden Chunk an und bearbeiten Sie die Aufgaben darunter.\*
+
+```{r}
+dataPrep %>% 
+  group_by(jatosStudyResultId, correspondence, targetAxis, error, .drop = FALSE) %>% 
+
+# Konzept "grouping": Eine weitere mächtige Funktion aus dem tidyverse (genauer aus dem dplyr-Paket) ist "group_by()" bzw. das Konzept des "groupings". Es folgt eine kurze konzeptuelle Beschreibung: Bei den oben geplanten Aggregationen, geht es letztlich immer darum *eine Teilmenge der Daten* zu nehmen (z.B. für Schritt 1. alle Durchgänge  pro Bedingung pro Versuchsperson) und mit einer bestimmten Operation (z.B. dem Mittelwert) zusammenzufassen. Würden wir das Ganze händisch machen müssten wir den Datensatz also in seine Teilmengen zerschneiden, die Operation auf jede Teilmenge anwenden und anschließend wieder alles zusammenführen. In R könnten wir das umsetzen, indem wir z.B. den "filter()" Befehl einsetzen, um die Daten einer Versuchsperson in einer bestimmten Kombination von Bedingungen zu erhalten. Wir würden diese Teilmenge dann in einen eigenen Datensatz abspeichern, die Operation auf die Daten anwenden und dann mit der nächsten Teilmenge weiter machen. Am Ende müssten wir alle aggregierten Teilmengen wieder zusammenschreiben. Der Nachteil dieses Vorgehens liegt auf der Hand: Selbst bei kleinen Datensätzen kommt es schnell zu einer Vielzahl von relevanten Teilmengen und wir müssten sehr viel Code schreiben, um unseren Datensatz zusammenzufassen. Der "group_by()" Befehl übernimmt das Aufteilen für uns: Wir geben an, über welche Variablen Teilmengen erstellt werden sollen (am besten immer Faktoren nehmen bzw. Variablen zuvor faktorisieren!) und "unter der Haube" wird der Datensatz aufgeteilt. Wenden wir anschließend eine Operation auf den Datensatz an (hier z.B. count()), werden die Operationen für jede Teilmenge seperat ausgeführt. 
+   
+# Woher weiß ich das ein Datensatz gruppiert ist? Ganz einfach: Wirft man mit "glimpse()", "head()" oder einfach über das Eintippen des Datensatznamens einen Blick in den Datensatz, wird in der Kopfzeile unter "Groups: ... [XX]" angezeigt nach welchen Variablen der Datensatz gruppiert ist und wie viele Teilmengen es gibt (in den eckigen Klammern).  
+  
+  count() %>% # Zeilen pro Gruppe zählen
+  filter(!is.na(error)) %>% # Fehlende Antworten filtern
+  group_by(jatosStudyResultId, correspondence, targetAxis) %>% # Neue Gruppierung setzen
+  mutate(N = sum(n)) %>% # ????
+
+# An dieser Stelle ist es nochmal wichtig sich den Unterschied zwischen den Funktionen "mutate()" und "summarise()" zu vergegenwärtigen: "mutate()" wirft einen Datensatz aus, der die gleiche Zeilenanzahl wie der ursprüngliche Datensatz hat (und potentiell eine bis mehrere neue Spalten). Ist der Datensatz gruppiert, (z.B. nach Versuchspersonen) wird die jeweilige Operation immer auf eine Teilmenge bezogen (z.B. der Mittelwert der Fehlerrate pro Versuchsperson). Gibt es pro Gruppe/Teilmenge mehrere Zeilen, schreibt der "mutate()"-Befehl in alle Zeilen den gleichen Wert (z.B. steht der Mittelwert pro Versuchsperson dann bei allen UV Ausprägungen, die eine Versuchsperson einbringt). Nützlich ist die Kombination aus "group_by()" und "mutate()" meistens, um die Berechnung bestimmter Variablen pro Teilmenge vorzubereiten. Der Befehl "summarise()" gibt dagegen einen Datensatz mit so vielen Zeilen wie es *Gruppen* im Datensatz gibt. Ohne Gruppierung gibt "summarise()" also immer genau eine Zeile aus. Beachte: Pro Teilmenge/Gruppe gibt eine Operation somit auch immer genau einen Wert aus. "group_by()" und "summarise()" sind damit das Dreamteam für Aggregationen.    
+  filter(error == "y") %>% # Nur ???? 
+  mutate(er = n/N) -> aggErSubj # Fehlerrate berechnen
+
+print(aggErSubj)
+```
+
+Was genau zählen wir, wenn wir den gruppierten Datensatz in den "count()"-Befehl einlesen?
+
+\> Antwort
+
+Ist es zwingend notwendig fehlende Antworten zu filtern?
+
+\> Antwort
+
+Wie verändert sich die Gruppierung beim zweiten "group_by()"? Warum müssen wir die Gruppierung so verändern? Tipp: Die Fehlerrate berechnet sich aus "Anzahl Fehler" / "Anzahl Antworten".
+
+\> Antwort
+
+Was berechnet der erste "mutate()" Befehl? Tipp: ?sum()
+
+\> Kommentar im Chunk setzen
+
+Welche Zeilen werden im zweiten "filter()"-Befehl ausgewählt?
+
+\> Kommentar im Chunk anpassen
+
+Aktuell ist der neue Datensatz noch gruppiert (siehe "glimpse()" oben). Fügen Sie am Ende der Pipe einen Befehl ein, der die Gruppierung aufhebt. Prüfen Sie über "glimpse()", ob Sie erfolgreich waren.
+
+\> Direkt im Chunk anpassen!
+
+#### Anschließend verschaffen wir uns mit einer Abbildung einen Überblick über die individuellen Daten, also die Fehleraten pro Bedingung für jede einzelne Versuchsperson.
+
+**Intro zu "ggplot":**
+
+Das Paket mit dem ich mich wohl lange am schwersten getan habe ist wohl ggplot.\
+Mir war nicht klar, warum "geom\_"-, "facet\_"- und "theme\_"-Elemente mit Pluszeichen zu großen Code-Blöcken vereint werden und was welcher Teil dabei genau bewirkt.\
+\
+Eine hilfreiche Analogie, um etwas Licht in das ggplot-Dunkel zu bringen ist der gute alte Overhead-Projektor (ich hoffe Sie können damit noch etwas anfangen...):\
+Der Befehl **ggplot()** knipst das Licht an, aber es ist noch nichts auf dem Projektor aufgelegt.\
+Über " **+ geom_XXXX()**"-Befehle (https://ggplot2.tidyverse.org/reference/index.html#geoms) lege ich nun Folien auf:\
+**geom_point()** zeichnet z.B. Punkte an bestimmte X-Y-Koordinaten,\
+**geom_line()** verbindet mehrere X-Y-Koordinaten mit einer Linie usw.\
+Mit diesen beiden Befehlen bzw. Befehlsgruppen können wir bereits Abbildungen erstellen.
+
+Häufig wollen wir aber nicht das Standard-Design von ggplot benutzen oder wir sollen die Achsenbeschriftung verändern. Für diesen Zweck gibt es weitere Klassen von Funktion, die selber keine Objekte zeichen (Folien auflegen), sondern lediglich bestehende Folien in ihrem Aussehen verändern.\
+**theme()** verändert z.B. das grundsätzliche Aussehen der Abbildung (Gibt es einen Hintergrund? Wie groß ist der Text? Wieviele Achsen gibt es?)\
+und bringt mit "theme_XXXX()"-Befehlen einige voreingestellte Designs mit (https://ggplot2.tidyverse.org/reference/ggtheme.html).\
+**labs()** ermöglicht es die X- und Y-Achse, sowie Farb- (color), Füllungs- (fill) oder auch Linienart-Legenden (linetype) mit Namen zu versehen.\
+Das ist häufig nötig, da ggplot standardmäßig den Variablennamen nimmt und dieser der Übersichtlichkeit halber meist eher kurz und kryptisch ist.\
+Wie gerade schon angeklungen werden all diese Befehle mit dem "+" aufeinander gestapelt (gestapelt wird übrigens wirklich: legt ihr mehrere "geom\_"-Elemente übereinander,\
+wird immer zuerst das im Code oberste gezeichnet und das darauffolgende überschneidet es dann potentiell).\
+\
+**Mit dieser grundsätzlichen Struktur im Kopf bleiben jetzt noch zwei große Fragen offen:**
+
+*Woher kommen die Daten, die ich mit ggplot abbilden möchte?*\
+Ganz einfach über das Argument "data =" kann ich ggplot einen Datensatz nennen. Innerhalb von ggplot brauche ich dann lediglich den Variablennamen schreiben, um auf eine Variable in diesem Datensatz zu verweisen.
+
+*Woher weiß ein "geom" was es genau zeichnen soll?*\
+Diese Informationen erhält es über das "aes()" Argument. Hier wird bestimmt "how variables in the data are mapped to visual properties (aesthetics) of geoms" (https://ggplot2.tidyverse.org/reference/aes.html; Ich fand den "aes"-Begriff zunächst sehr unintuitiv...).
+
+Konkret können wir z.B. über "x =" und "y =" festlegen welche Variablen die X-Y-Koordinaten für ein geom liefern sollen, über "color =" oder "fill =", ob Daten aufgrund einer Variable farblich kodiert werden und über "shape =", ob die Ausprägungen einer Variable über die Form von Punkten (z.B. geom_point()) kodiert werden. Eine Übersicht über gängige Argumente und mögliche Werte finden Sie unter: https://ggplot2.tidyverse.org/articles/ggplot2-specs.html Argumente wie "color =" oder "shape =" können Sie auch außerhalb der aes()-Funktion benutzen. Dann kann \*nicht\* auf Variablennamen verwiesen werden, aber über die eingabe eines Wert das Aussehen für alle Objekte dieses geoms verändern, z.B. geom_point(color = "red") für rote, anstatt schwarze Punkte.
+
+Sowohl das "data ="-Argument, als auch die "aes()"-Funktionen können an verschiedenen Stellen im ggplot-Block eingesetzt werden. Schreibt man diese Befehle in den ursprünglichen "ggplot()"-Befehl, übernehmen alle darauffolgenden geoms usw. diese Eigenschaften. Alternativ kann man in jedem geom auch eigene "data =" und "aes()" Befehle setzen. Oft ist es eine gute Idee "data =" und "aes()" global im "ggplot()"-Befehl zu setzen, da man so einfach weniger Tippen muss. Es sei denn man will in unterschiedlichen geoms unterschiedliche Daten darstellen. Dann ist man darauf angewiesen "data =" und "aes()" lokal zu setzen. Hat man bereits globale "data =" und "aes()" gesetzt, will sie aber in einem geom mit lokal überschreiben, muss man zusätzlich das Arugment "inherit.aes = FALSE" setzen. In diesem Skript wird das vorrausichtlich aber nicht notwendig sein.
+
+**Eine letzte Anmerkung:** ggplot ermöglicht es auch über die "stat_XXXX"-Gruppe Aggregationen direkt im ggplot-Block vorzunehmen. Das kann manchmal nützlich sein, zu Beginn würde ich euch aber empfehlen den Datensatz außerhalb von ggplot so vorzubereiten, wie ihr ihn für die Abbildung benötigt. Es ist so deutlich leichter zu überprüfen, dass die Aggregation wirklich so vorgenommen wird, wie ihr es geplant habt. Man hat so auch deutlich mehr Kontrolle über die Art der Aggregierung.
+
+Schauen Sie sich den folgenden Chunk an und bearbeiten Sie die Aufgaben darunter.
+
+```{r, fig.height=10,fig.width=10}
+
+ggplot(data = aggErSubj, 
+       aes(x = correspondence,
+           y = er,
+           color = targetAxis)) +
+  facet_wrap(facets = vars(jatosStudyResultId), ncol = 4) + # Diese Funktion sorgt dafür das die Abbildung auf Basis von einer Variable in viele einzelne Abbildungen (Facetten) unterteilt wird. Ich nutze sie hier, um pro Versuchsperson eine Abbildung zu erhalten. Das Argument "ncol = 4" sorgt dafür, dass max. 4 Facetten nebeneinander in eine Zeile gedrückt werden. 
+  geom_point() +
+  geom_line(aes(group = targetAxis)) + # Diese Linie ist inhaltlich nicht ganz korrekt, denn die Korrespondenz-Bedingungen bilden kein Kontinuum. Allerdings ermöglicht die Linie es, das Verhältnis zwischen den Punkten auf einen Blick festzustellen. Das Argument "aes(group = targetAxis)" ist notwendig, da ggplot von sich aus (korrekterweise) keine Linie über Stufen einer kategorialen Variable ziehen würde. Es bedeutet an dieser Stelle soviel wie "verbinde Punkte über die Korrespondenz-Bedinungen, aber trenne nach Achsen-Bedingung".
+  labs(x = "Korrespondenz zwischen Antworttasten und Targetposition", y = "relativer Anteil falscher Antworten", color = "Achse der Targetposition") +
+  theme_bw() + # "Grundlage" für mein Custom-Theme
+  theme(strip.background = element_blank(), # Custom-Theme verfeinern; siehe https://henrywang.nl/ggplot2-theme-elements-demonstration/ für eine grobe Übersicht, über welches Argument welche Teile der Abbildung angesprochen werden.
+        panel.background = element_blank(),
+        panel.grid = element_blank(),
+        legend.position = "bottom") -> ggErSubj
+
+ggErSubj # Abbildung in diesem Chunk öffnen (ansonsten wird die Abbildung nicht angezeigt) 
+
+# Hinweis: Speichern von Abbildungen. In der Regel werden Sie Abbildungen nicht nur in RStudio oder im gerendertem html- oder PDF-Dokument betrachten wollen, sondern  manchmal auch eine Bilddatei, die einfach  Word, Powerpoint etc. einfügt werden kann. RStudio ermöglicht es über seine "Klick-Oberfläche" Abbildungen zu speichern. Viel besser ist es jedoch dies über den folgenden Befehl zu automatisieren.
+
+#ggsave(filename = "ggErSubj.png",plot = ggErSubj,width = 7,height = 7,dpi = 300) # Ich habe diese Zeile erstmal auskommentiert, damit ich nicht wild Dateien in einen fremden Ordner speichere. Entfernen Sie einfach den Kommentar, um die Abbildung in den Ordner zu speichern, indem aktuell auch diese Rmd liegt. Sie können natürlich auch einen Unterordner erstellen und die Bilddatei über z.B. "Abbildungen/ggErSubj.png" in diesen abspeichern.
+
+# Kurze Erläuterungen zu den Argumenten: 
+# filename = Der Name (und Pfad) unter dem die Bilddatei auf eurem Rechner gespeichert werden soll. Über die Endung könnt ihr angeben, in welchem Format das Bild gespeichert werden soll (gebräuchlich sind png, jpeg, gif oder auch das vektorbasierte svg Format).
+# plot = das ggplot-Objekt, das gespeichert werden soll
+# width und height = Breite und Höhe in inch, passt die Abbildung nicht ganz in die Bilddatei, sind die Schriften zu klein oder die Achsenverhältnisse verzerrt, probieren Sie gern unterschiedliche Werte aus (Tipp: ausprobieren geht auch in der ersten Zeile des Chunks, innerhalb der geschweiften Klammer. Am Ende einfach die besten Werte in den Befehl übernehmen.)
+# dpi = Auflösung bei pixel-basierten Bildformaten. 300 ist ein guter Kompromiss!
+
+
+```
+
+Fügen Sie vor geom_point(...) ein geom hinzu, das auf Höhe der Ratewahrscheinlichkeit eine horizontale, gestrichelte ("dashed") Linie als Referenz zeichnet. Eine Übersicht zu möglichen geoms finden Sie unter https://ggplot2.tidyverse.org/reference/index.html. Tipp: "geom_line()" ist für diese Aufgabe eher nicht geeignet und das richtige geom braucht hier nicht einmal ein aes()-Befehl!
+
+\> Direkt im Chunk anpassen!
+
+Was bewirkt der Befehl scale_x_continuous()? Kommentieren Sie ihn aus und vergleichen Sie die Abbildung.
+
+\> Kommentar im Chunk setzen
+
+Entfernen Sie den Kommentar vor dem ggsave()-Befehl und speicheren Sie die Abbildung in deinem Projektordner. Passen Sie ggf. die Größe so an, dass die Abbildung gut aussieht.
+
+\> Direkt im Chunk anpassen!
+
+Zeigt sich der erwartete Effekt auf individueller Ebene? Welche Versuchspersonen zeigen ihn? Welche nicht? Gibt es interessante Muster?
+
+\> Antwort
+
+### Schritt 2: Mittlere Fehlerrate pro Bedingung
+
+Wir können nun die Fehlerrate, die wir in Schritt 1 berechnet haben über Versuchspersonen hinweg aggregieren. Anders als in Schritt 1 ist der Mittelwert hierfür jetzt eine mögliche Operation. Zusätzlich wollen wir ein Streuungsmaß erhalten. Hier gilt es einen wichtigen Punkt zu beachten: Bei Messwiederholungsdesigns ist es nicht ratsam die Streuung über Versuchspersonen hinweg zu berechnen, da dies keine Aussagen über die Signifikanz von Effekten innerhalb der Versuchspersonen erlaubt. Eine relativ einfache möglich die Streuungsmaße für within-subject-Designs zu bestimmen geben Loftus und Mason (1994; https://doi.org/10.3758/BF03210951 enthält eine anschauliche Erklärung zum Hintergrund dieser Korrektur!):
+
+Vom eigentlich relevanten Wert einer Versuchsperson in einer bestimmten Bedingung wird zunächst der Mittelwert dieser Versuchsperson über alle Bedingungen hinweg abgezogen. Dann wird der Gesamt-Mittelwert über alle Bedingungen und Versuchspersonen (auch "grand mean") addiert. Über diese "adjustierte" (genauer: um die between-subject Variabilität bereinigte) Fehlerrate kann dann auf üblichem Wege die Streuung, der Messfehler und das Konfidenzintervall berechnet werden.
+
+Keine Angst, dieses Vorgehen ist im unteren Chunk bereits programmiert. Wichtig ist aber, dass bei euch die Alarmglocken angehen, wenn ihr within-subject Design und Streuungsmaß in einem Satz hört und euch an diesen Abschnitt zurück erinnert.
+
+
+*Schauen Sie sich den folgenden Chunk an und bearbeiten Sie die Aufgaben darunter.*
+
+```{r}
+XXXX %>%
+  ungroup() %>% # Sicher ist sicher!
+  mutate(erMgrand = mean(er)) %>% # grand mean berechnen
+  group_by(jatosStudyResultId) %>% # Nach Versuchspersonen gruppieren
+  mutate(erMsubj = mean(er), # Mittelwert pro Versuchsperson *über alle Bedingungen hinweg* berechnen
+         erAdjust = er - erMsubj + erMgrand) %>% # Fehlerrate adjustieren
+  group_by(XXXX, XXXX) %>%
+  summarise(erM = mean(er),
+            erSd  = sd(erAdjust),
+            erSe = XXXX / sqrt(length(XXXX)), # length() gibt die Länge eines Vektors aus...
+            erCi95 = XXXX * 1.96,
+            .groups = "drop") -> aggErM
+
+print(aggErM)
+```
+
+*Setzen Sie den richtigen Datensatz an den Anfang der Pipe*
+
+> Direkt im Chunk anpassen!
+
+*Setzen Sie im zweiten "group_by()"-Befehl die richtige Gruppierung ein*
+
+> Direkt im Chunk anpassen!
+
+*Fügen Sie im "summarise()"-Befehl die fehlenden Variablen ein um den Messfehler (aka Standardmessfehler oder standard error (of the mean)) und das 95% Konfidenzintervall zu berechnen.*
+
+> Direkt im Chunk anpassen!
+
+*Was bewirkt das Argument ".group ="drop""? Tipp: ?summarise()*
+
+**Auch zum Ergebnis von Schritt 2 erstellen wir natürlich eine Abbildung. Der Code sieht ziemlich ähnlich aus wie zur Abbildung zu den individuellen Daten.**
+
+*Schauen Sie sich den folgenden Chunk an und bearbeite Sie die Aufgaben darunter.*
+
+```{r}
+ggplot(data = aggRcM, 
+       aes(x = correspondence,
+           y = erM,
+           color = targetAxis)) +
+  geom_errorbar(aes(ymin = erM - erSe, # Fehlerbalken hinzufügen. Achtung: Die Ober- und Untergrenze ist nicht allein die Streuung, sondern Mittelwert +/- Streuung!
+                    ymax = erM + erSe),
+                width = 0.111) +
+  geom_point() +
+  geom_hline(yintercept = 0.5, linetype = "dashed") +
+  geom_line(aes(group = targetAxis)) +
+  labs(x = "Korrespondenz zwischen Antworttasten und Targetposition", y = "relativer Anteil falscher Antworten", color = "Achse der Targetposition") +
+  theme_bw() + # "Grundlage" für mein Custom-Theme
+  theme(strip.background = element_blank(), # Custom-Theme verfeinern; siehe https://henrywang.nl/ggplot2-theme-elements-demonstration/ für eine grobe Übersicht, über welches Argument welche Teile der Abbildung angesprochen werden.
+        panel.background = element_blank(),
+        panel.grid = element_blank(),
+        legend.position = "bottom") -> ggErM
+
+ggErM
+```
+
+*Aktuell zeigt der Fehlerbalken den Messfehler an. Passen Sie den "geom_errorbar()"-Befehl so an, dass das 95% Konfidenzintervall angezeigt wird.*
+
+> Direkt im Chunk anpassen!
+
+*Schreiben Sie einen ggsave()-Befehl mit der Sie die Abbildung unter dem Namen "ggErM.png" auf Ihrem Rechner abspeichern.*
+
+> Direkt im Chunk anpassen!
+
+*Beschreiben Sie die Abbildung. Zeigt sich der erwartete Effekt in dem Mittelwerten?*
+
+> Antwort
+
+## Inferenzstatistik
+
+Nach dem wir uns die Effekte auf die Fehlerrate deskriptiv angeschaut haben, möchten wir unsere Beobachtungen nun statistisch absichern. Für die Analyse bietet es sich an eine **repeated-measures ANOVA** zu rechnen. Melden Sie sich gern bei Tutor\*in oder Dozent\*in, sollten Sie Fragen dazu haben.
+
+An dieser Stelle wird ein letzter Schritt zur Vorbereitung fällig: Fehlerraten *können nicht* normalverteilt sein, viele statistische Verfahren basieren aber auf der Annahme, dass die eingesetzten Variablen normalverteilt sind. Eine Möglichkeit die Verletzung dieser Vorraussetzung abzufedern ist die Arcus-Sinus Transformation. Wir transformieren daher die Fehlerrate zunächst nach diesem Verfahren und benutzen diese Transformation als abhängige Variable beim Prüfen der Voraussetzungen und dem Berechnen der eigentlichen Analyse.
+
+*Schaues Sie sich den folgenden Chunk an und bearbeiten Sie die Aufgaben darunter.*
+
+```{r}
+XXXX %>%
+  mutate(erArcSin = asin(sqrt(er))) -> XXXX
+
+print(XXXX)
+```
+
+*Setzen Sie den richigen Datensatz an den Beginn und das Ende der Pipe. Tipp: Es sollte an beiden Stellen der gleiche sein. (Absolute Ausnahme, da nur eine Spalte angefügt wird)*
+
+> Direkt im Chunk anpassen!
+
+### Voraussetzungen
+
+Eine Möglichkeit die Normalverteilung von Daten deskriptiv zu beurteilen sind sogenannte Q-Q-Plots. Sie liefern zwar kein eindeutiges Urteil darüber, ob Normalverteilung vorliegt. Dafür stellen sie das vollständige Datenmuster dar und ermöglichen es so ein Gefühl für schwere und Muster der Verletzung zu erlangen.
+
+*Schaues Sie sich den folgenden Chunk an und bearbeiten Sie die Aufgaben darunter.*
+
+```{r}
+aggErSubj %>% 
+  ggplot(aes(sample = erArcSin)) +
+  facet_grid(cols = vars(correspondence), rows = vars(targetAxis)) + 
+  stat_qq() + 
+  stat_qq_line() +
+  labs(x = "Beobachteter Wert", y = "Erwarteter Wert bei Normalverteilung") +
+  theme_bw() +
+  theme(panel.background = element_blank(),
+        panel.grid = element_blank(),
+        strip.background = element_blank())
+```
+
+*Warum sehen Sie hier mehrere Abbildungen, wenn es doch um nur eine abhängige Variable geht?*
+
+> Antwort
+
+*Wie beurteilen Sie die Normalverteilung der Daten aufgrund dieser Abbildungen?*
+
+> Antwort
+
+Eine andere Möglichkeit Normalverteilung statistisch abzusichern ist der Shapiro-Wilk Test auf Normalverteilung. Der untere Chunk berechnet diesen Test für die abhängige Variable.
+
+*Schaues Sie sich den folgenden Chunk an und bearbeiten Sie die Aufgaben darunter.*
+
+```{r}
+aggErSubj %>% 
+  group_by(correspondence, targetAxis) %>%
+  summarise(shapiroW = shapiro.test(x = erArcSin)$statistic,
+            shapiroP = shapiro.test(x = erArcSin)$p.value,.groups = "drop") %>% 
+  mutate(sig = ifelse(shapiroP < 0.05, "*", ""))
+```
+
+*Wie beurteilen Sie die Normalverteilung der Daten aufgrund dieses Outputs?*
+
+> Antwort
+
+Eine weitere Voraussetzung für eine repeated-measures ANOVA ist Sphärizität. Ähnlich wie bei der Varianzhomogenität bei between-group ANOVA geht es darum, ob Varianz und Covarianz innerhalb bzw. zwischen den Bedingungen vergleichbar sind. Da Sphärizität sich vornehmlich auf ähnliche Varianzen der *Differenz* bezieht, kann es erst zu einem Problem werden, wenn eine unabhängige Variable 3 oder mehr Stufen hat. Der "ezANOVA()"-Befehl, den wir gleich einsetzen werden, liefert diese Statistik von Haus aus mit. Daher brauchen wir sie hier nicht extra zu berechnen
+
+### ANOVA
+
+Endlich ist es soweit: Die Inferenzstatstik. Sehr typisch für R ist, das es an dieser Stelle auf einmal sehr schnell geht. Sind die Daten erstmal schön aufbereitet und abgebildet, ist das Rechnen einer Statistik häufig durch das Aufrufen einer einzigen Funktion getan. So auch hier.
+
+*Schaues Sie sich den folgenden Chunk an und bearbeiten Sie die Aufgaben darunter.*
+
+```{r}
+ezANOVA(
+  data = XXXX,
+  within = .(XXXX, XXXX), # .()-Notation ist eine eigenart der des ez-Pakets und ersetzt in gewisser Weise ein c() (es können also mehrere Variablen genannt werden)
+  dv = XXXX,
+  wid = XXXX,
+  detailed = TRUE # We want it all!
+) -> aovEr
+```
+
+*Öffnen Sie mit ?ezANOVA() die Hilfe zur Funktion und ersetzen Sie die Platzhalter durch die korrekten Variablennamen. Führen Sie anschließend den Chunk aus, um die ANOVA in das Objekt aovEr zu speichern*
+
+> Direkt im Chunk anpassen!
+
+Nachdem wir das Modell berechnet haben, könnten wir das Objekt auch einfach in einem Chunk bzw. über die Console aufrufen, um zu schauen, was es enthält. Gerade für einen übersichtlichen Output in einer Qmd, bietet es sich aber an, die einzelnen Parts des Objekts nacheinander in einzelnen Chunks zu öffnen. So ist alles sauber untereinander gereit und wir können zu jedem Abschnitt Anmerkungen (und Aufgaben...) setzen.
+
+**Als erstes schauen wir in das Ergebnis des Mauchly-Test auf Sphärizität:**
+
+```{r}
+# Konzept "Listen": Beim Objekt in dem sich das Modell befindet handelt es sich um eine Liste. Das ist wie ein data.frame oder Vektor (c()) eine Datenstruktur in R. Wir müssen an dieser Stelle nicht tief in die Feinheiten von Listen eintauchen, es gibt aber ein paar grundlegende Dinge zu lernen:
+# - Konzeptuell ist es vielleicht hilfreich über Listen als ineinander Verschachtelte Boxen nachzudenken. Eine große Box A enthält vielleicht zwei kleinere Boxen B und C und so weiter. An beliebiger Stelle kann statt einer weiteren Box auch ein Wert liegen, z.B. ein numeric wie 1 oder ein String wie "ABCD" oder aber es werden andere Datenstrukturen wie z.B. data.frames in einer Box geparkt.
+# - Ähnlich wie bei Datensätzen, können Sie über den "$"-Operator unterschiedliche Parts einer Liste auswählen. Öffnen Sie die oberste Ebene, werden immer alle Boxen entpackt. Wählen Sie ihr über "$" eine niedrigere Ebene, wird nur dieser Part angezeigt. Genau das werden wir in den folgenden Chunks tun.
+# - Alternativ können Sie Listen-Ebenen auch über den "[[]]"-Operator auswählen. Bei manchen Listen ist das zwingend notwendig, da die einzelnen Boxen hier schlicht nicht benannt sind. Hier kommen wir zum Glück auch ohne aus.
+aovRc$`Mauchly's Test for Sphericity`
+```
+
+*Der obere Chunk gibt den Output vom Mauchly-Test auf Sphärizität. Liegen hier Probleme vor? Wenn ja, was gilt es jetzt zu tun?*
+
+> Antwort
+
+**Dann schauen wir uns die eigentliche ANOVA-Tabelle an:**
+
+*Schaues Sie sich den folgenden Chunk an und bearbeiten Sie die Aufgaben darunter.*
+
+```{r}
+aovRc$ANOVA
+```
+
+*Interpretieren Sie die Tabelle. Welche Haupteffekte zeigen sich? Gibt es Interaktionen?*
+
+**Den dritten Output, den wir von der "ezANOVA()"-Funktion ausgeben bekommen haben enthält die Spherizitäts-Korrekturen:**
+
+*Schaues Sie sich den folgenden Chunk an und bearbeiten Sie die Aufgaben darunter.*
+
+```{r}
+aovRc$`Sphericity Corrections`
+```
+
+*Was hat es mit dieser Tabelle auf sich? Warum sind nicht alle Effekte aufgeführt? Ist diese Tabelle für uns relevant?*
+
+> Antwort
+
+*Müssen die Erkenntnisse aus dem Chunk mit der ANOVA-Tabelle nochmal überdacht werden?*
+
+> Antwort
+
+# Analyse der Reaktionszeiten
+
+Damit ist die Analyse der ersten abhängigen Variable fürs erste abgeschlossen. Die Analyse der zweiten abhängigen Variable verläuft mehr oder weniger parallel. Zum Einstieg weise ich Sie noch auf ein paar Unterschiede hin, dann ist es an Ihnen die vorgebenen Analyseschritte mit Code zu füllen
+
+## Deskriptive Statistik
+
+### Schritt 1: Berechnung der Reaktionszeit pro Versuchsperson und Bedingung
+
+Für die Analyse der Reaktionszeiten gilt es zwei wichtige Punkte zu berücksichtigen: Zum einen schauen wir uns hier nur Durchgänge an, in denen eine Versuchsperson eine richtige Antwort gegeben hat. Zum anderen benutzen wir das "trim"-Argument der "mean()"-Funktion, um extreme Reaktionszeiten auszuschließen und so eine robustere Schätzung der mittleren Reaktionszeit zu erhalten. Praktisch werden dafür häufig 5% der langsamsten und 5% der schnellsten Reaktionen ausgeschlossen.
+
+*Schaues Sie sich den folgenden Chunk an und bearbeiten Sie die Aufgaben darunter.*
+
+```{r}
+dataPrep %>% 
+  filter(XXXX) %>%
+  group_by(jatosStudyResultId, correspondence, targetAxis) %>% 
+  summarise(rt = mean(response_time_keyAnswer, trim = 0.05), .groups = "drop") -> aggRtSubj # getrimmten Mittelwert berechnen
+
+glimpse(aggRtSubj)
+```
+
+*Setzten Sie den "filter()"-Befehl so, dass nur korrekte Durchgänge berücksichtigt werden.*
+
+> Direkt im Chunk anpassen!
+
+*Ab hier sollen Sie selbstständig weiter machen. Achten Sie auch darauf, die inhaltlichen Interpretation der Abbildungen und Analysen in die Rmd mit aufzunehmen.*
+
+**Abbildung zu den individueller Daten:**
+
+```{r, fig.height = 10, fig.width= 10}
+```
+
+### Schritt 2: Mittlere Reaktionszeit pro Bedingung
+
+Daten über Versuchspersonen hinweg aggregieren und Streuungsmaß berechnen, das dem within-subject gerecht wird:
+
+```{r}
+```
+
+Abbildung zu den mittleren Reaktionszeiten (speichern nicht vergessen!):
+
+```{r}
+```
+
+## Inferenzstatistik
+
+### Vorraussetzungen testen
+
+Q-Q-Plot:
+
+```{r}
+```
+
+Shapiro-Wilk-Test:
+
+```{r}
+```
+
+### ANOVA
+
+Repeated-measures ANOVA mit "ezANOVA()":
+
+```{r}
+```
+
+Output - Mauchly-Test auf Sphärizität:
+
+```{r}
+```
+
+Outout - ANOVA-Tabelle:
+
+```{r}
+```
+
+Output - Spherizitäts-Korrekturen:
+
+```{r}
+```
+
+# Diskussion
+
+*Fassen Sie zunächst die Ergebnisse der beiden Analysen zusammenfassen. Interpretieren Sie diese abschließend in Bezug auf die Forschungsfrage. Ist die Replikation geglückt? Gibt es interessante neue Erkenntnisse?*
+
+# Demographie
+
+Zum Abschluss beschäftigen wir uns mit den demographischen Daten. Da wir keine weiteren Ausschlusskriterien hatten, hätten wir dies auch schon eher tun können. Häufig hat man jedoch Ausshlüsse nicht nur auf Grund der vollständigen Bearbeitung des Experimentes durch, sondern auch auf Grund der Leistung (z.B. Mindestleistung oder Ausreißerkontrolle).
+
+Alle aus der Analyse ausgeschlossenen Versuchpersonen müssen natürlich auch aus den demographischen Daten ausgeschlossen werden.
+
+Die demographischen Daten sind in einer eigenen csv gespeichert. Im folgenden Chunk lesen wir sie ein.
+
+*Führen Sie den folgenden Chunk aus*
+
+```{r}
+dataDemo <- read_delim("Daten/2022-06-14_AP1-22_Bewu_G1_Metakontrast-Priming_demo.csv", na = c("None")) # Stellen Sie sicher, dass der Dateiname stimmt!
+```
+
+Im Anschluss bietet es sich an dieser Stelle an, die beiden demographischen Variablen Alter und Geschlecht auszuwerten.
+
+Wir beginnen mit dem Alter.\
+*Führen Sie den folgenden Chunk aus und beantworten Sie die Fragen darunter.*
+
+```{r demoAge}
+dataDemo %>%   
+  filter(studyResultId %in% subjComplete) %>% # Nur mit kompletten Datensätzen Versuchspersonen auswählen   
+  summarise( 
+    # Fasst die Daten in neuen Variablen zusammen     
+    alterM = round(mean(ALTER),4),      alterSd = round(sd(ALTER),4),     alterMin = min(ALTER),     alterMax = max(ALTER))
+```
+
+*Was bewirkt der filter() zu Beginn der Pipe?*
+
+> Antwort
+
+*Was geben die vier "alter"-Variablen im Output des Chunks an?*
+
+> Antwort
+
+*Beschreiben Sie etwas ausführlicher, was die Funktion summarise() macht. Welche Maße (Zeilen x Spalten) hat z.B. der Datensatz, der rein geht und welche Maße hat der Datensatz der rauskommt? Tipp: ?dplyr::summarise und siehe auch <https://www.rstudio.com/wp-content/uploads/2015/02/data-wrangling-cheatsheet.pdf>*
+
+> Antwort
+
+*Können Sie den Code so modifizieren, dass der Output auf 2 Nachkommastellen, statt auf 4 gerundet wird?*
+
+> Direkt im Chunk anpassen!
+
+Weiter geht es mit der Geschlechterverteilung in der vorliegenden Stichprobe.
+
+*Führen Sie den folgenden Chunk aus und beantworten Sie die Fragen darunter.*
+
+```{r demoSex}
+dataDemo %>% 
+  filter(studyResultId %in% subjComplete) %>%
+  count(GESCHL) %>% # Zeilen pro "GESCHL"-Wert zählen
+  mutate(N = sum(n), relFreq = round(n/N * 100,2)) # Erstellen von neuen Variablen
+```
+
+*Was wird in der Variable "N" berechnet?*
+
+> Antwort
+
+*Was verbirgt sich hinter der Variable relFreq?*
+
+> Antwort
+
+*Beschreiben Sie etwas ausführlicher, was die Funktion mutate() macht. Wie verändern sich hier die Maße des eingehenden und ausgehenden Datensatzes? Tipp: Gib ?mutate() in die Console ein, um die Hilfe öffnen. Siehe auch <https://www.rstudio.com/wp-content/uploads/2015/02/data-wrangling-cheatsheet.pdf>*
+
+> Antwort
+
+Das war es schon zur Demographie. Beachte, dass wir aktuell nur die Versuchspersonen berücksichtigt haben, die vollständige Datensätze eingebracht haben und die Demographie des Ausschluss daher gerade unbekannt ist. Bei einem großen Ausschluss oder wenn er aus anderen Gründen interessant für das Experiment ist, sollte auch die Demographie des Ausschluss beschrieben werden.
+
+*Beschreiben Sie abschließend die Stichprobe in einem kurzen Absatz so, wie Sie es für einen Forschungsbericht tun würden. Tipp: Schauen Sie für Beispiele in eine aktuelle empirische Studie oder das APA Manual.*
+
+> Antwort
